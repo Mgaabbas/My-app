@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="NutriAI" />
+  <meta name="theme-color" content="#00e5ff" />
+  <meta name="description" content="Instant AI-powered nutrition analysis for any food or drink" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="apple-touch-icon" href="./icon-192.png" />
+  <title>AI Nutrition Analyzer</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:#0a0f1e;--card:#111827;--border:#1e2d45;
+      --accent:#00e5ff;--accent-glow:#00e5ff22;
+      --green:#00ff9d;--yellow:#ffd166;--red:#ff4d6d;--purple:#b47dff;
+      --text:#e2e8f0;--muted:#64748b;--pill:#1a2540;
+      --safe-top:env(safe-area-inset-top,0px);
+      --safe-bottom:env(safe-area-inset-bottom,0px);
+    }
+    *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100dvh;overscroll-behavior:none}
+    #app{max-width:480px;margin:0 auto;padding:calc(var(--safe-top) + 64px) 16px calc(var(--safe-bottom) + 60px)}
+
+    /* Header */
+    .header{text-align:center;margin-bottom:28px}
+    .badge{display:inline-flex;align-items:center;gap:6px;background:var(--accent-glow);border:1px solid #00e5ff44;border-radius:99px;padding:5px 14px;font-size:11px;color:var(--accent);letter-spacing:2px;font-weight:700;margin-bottom:14px}
+    .header h1{font-size:30px;font-weight:900;line-height:1.2;background:linear-gradient(135deg,var(--text),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .header p{font-size:13px;color:var(--muted);margin-top:10px}
+
+    /* Input */
+    .input-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:16px;margin-bottom:16px}
+    .input-card textarea{width:100%;background:transparent;border:none;color:var(--text);font-size:15px;font-family:inherit;line-height:1.6;resize:none}
+    .input-card textarea:focus{outline:none}
+    .input-card textarea::placeholder{color:var(--muted)}
+    .input-footer{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
+    .input-footer span{font-size:11px;color:var(--muted)}
+    .btn-analyze{background:var(--accent);color:#0a0f1e;border:none;border-radius:12px;padding:10px 20px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 0 16px #00e5ff55;transition:transform .1s}
+    .btn-analyze:active{transform:scale(.96)}
+    .btn-analyze:disabled{background:var(--pill);color:var(--muted);box-shadow:none;cursor:default}
+
+    /* Examples */
+    .examples-label{font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:10px}
+    .examples{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:24px}
+    .example-chip{background:var(--pill);border:1px solid var(--border);border-radius:99px;padding:7px 14px;font-size:12px;color:var(--text);cursor:pointer;font-family:inherit}
+
+    /* Skeleton */
+    .skeleton{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px}
+    .skel-line{height:14px;background:var(--pill);border-radius:8px;margin-bottom:14px;animation:pulse 1.2s ease infinite}
+    .skel-msg{text-align:center;color:var(--muted);font-size:13px;margin-top:8px}
+
+    /* Result */
+    .result-card{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:20px;animation:fadeSlide .4s ease}
+    .result-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px}
+    .result-name{font-size:22px;font-weight:800;color:var(--text)}
+    .tags{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+    .tag{font-size:11px;font-weight:600;border-radius:6px;padding:2px 9px}
+    .tag-type{background:var(--accent-glow);color:var(--accent)}
+    .calorie-box{background:var(--accent-glow);border:1px solid #00e5ff55;border-radius:12px;padding:6px 12px;text-align:center;min-width:68px}
+    .calorie-label{font-size:9px;color:var(--muted);letter-spacing:1px}
+    .calorie-val{font-size:20px;font-weight:900;color:var(--accent);font-family:monospace}
+    .calorie-unit{font-size:9px;color:var(--muted)}
+    .section{margin-bottom:18px}
+    .section-title{font-size:10px;letter-spacing:2px;color:var(--accent);text-transform:uppercase;font-weight:700;margin-bottom:10px}
+    .pills{display:flex;gap:8px;flex-wrap:wrap}
+    .pill{background:var(--pill);border:1px solid #1e2d4522;border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:2px;flex:1;min-width:64px}
+    .pill-label{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+    .pill-val{font-size:15px;font-weight:700}
+    .score-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+    .score-label{font-size:11px;color:var(--muted);letter-spacing:1px}
+    .score-num{font-size:18px;font-weight:800;font-family:monospace}
+    .score-track{background:#1e2d45;border-radius:99px;height:8px;overflow:hidden}
+    .score-fill{height:100%;border-radius:99px;transition:width 1s ease}
+    .score-explain{font-size:13px;color:var(--muted);line-height:1.5;margin-top:8px}
+    .age-cards{display:flex;flex-direction:column;gap:8px}
+    .age-card{background:#0f1c33;border:1px solid var(--border);border-radius:12px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+    .age-emoji{font-size:24px;line-height:1}
+    .age-body{flex:1}
+    .age-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:3px}
+    .age-group{font-size:12px;color:var(--muted);font-weight:600}
+    .age-time{font-size:12px;font-weight:700;color:var(--accent);background:var(--accent-glow);border-radius:6px;padding:2px 8px}
+    .age-reason{font-size:12px;color:var(--muted);line-height:1.5}
+    .warnings{display:flex;flex-direction:column;gap:8px}
+    .warning{background:#ff4d6d18;border:1px solid #ff4d6d55;border-radius:10px;padding:9px 14px;display:flex;align-items:center;gap:8px;font-size:13px;color:#ff8fa3}
+    .summary-box{background:#0f1c33;border:1px solid var(--border);border-radius:12px;padding:12px 14px;font-size:13px;color:var(--muted);line-height:1.7}
+    .error-box{background:#ff4d6d18;border:1px solid #ff4d6d55;border-radius:16px;padding:16px;text-align:center;color:#ff8fa3;font-size:14px;line-height:1.6}
+
+    /* Settings */
+    #settings-btn{position:fixed;top:calc(var(--safe-top) + 14px);right:16px;background:var(--pill);border:1px solid var(--border);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;z-index:200}
+
+    /* Modal */
+    #api-modal{position:fixed;inset:0;z-index:9999;background:#0a0f1ef2;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
+    .modal-box{background:#111827;border:1px solid #00e5ff44;border-radius:24px;padding:24px 20px;width:100%;max-width:420px;box-shadow:0 0 40px #00e5ff22;animation:fadeSlide .4s ease;max-height:90vh;overflow-y:auto}
+    .modal-icon{font-size:36px;text-align:center;margin-bottom:10px}
+    .modal-title{font-size:19px;font-weight:800;text-align:center;color:var(--text);margin-bottom:6px}
+    .modal-sub{font-size:13px;color:var(--muted);text-align:center;line-height:1.6;margin-bottom:18px}
+
+    /* Free badge */
+    .free-badge{display:inline-flex;align-items:center;gap:5px;background:#00ff9d18;border:1px solid #00ff9d44;border-radius:99px;padding:3px 10px;font-size:11px;color:#00ff9d;font-weight:700;margin-bottom:16px}
+
+    /* Steps */
+    .steps{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+    .step{display:flex;align-items:flex-start;gap:10px;background:var(--pill);border-radius:12px;padding:12px}
+    .step-num{background:var(--accent);color:#0a0f1e;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0;margin-top:1px}
+    .step-text{font-size:12px;color:var(--muted);line-height:1.5}
+    .step-text strong{color:var(--text)}
+    .step-text a{color:var(--accent);text-decoration:none;font-weight:600}
+
+    /* Key input */
+    .key-label{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+    .key-input-wrap{background:var(--pill);border:1px solid var(--border);border-radius:14px;padding:4px 4px 4px 14px;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+    .key-input-wrap input{flex:1;background:transparent;border:none;color:var(--text);font-size:13px;font-family:monospace;padding:10px 0}
+    .key-input-wrap input:focus{outline:none}
+    .key-input-wrap input::placeholder{color:var(--muted);font-family:inherit;font-size:12px}
+    .btn-eye{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:6px 8px}
+    .btn-test-key{background:var(--pill);color:var(--text);border:1px solid var(--border);border-radius:12px;padding:13px 16px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}
+    .btn-save-key{flex:1;background:var(--accent);color:#0a0f1e;border:none;border-radius:12px;padding:13px;font-size:14px;font-weight:700;font-family:inherit;cursor:pointer;box-shadow:0 0 16px #00e5ff44}
+    .key-saved-row{display:flex;align-items:center;gap:8px;background:#00ff9d18;border:1px solid #00ff9d44;border-radius:10px;padding:8px 12px;margin-bottom:12px;font-size:13px;color:#00ff9d}
+    .modal-note{font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.5}
+
+    /* Install */
+    #install-banner{position:fixed;bottom:calc(var(--safe-bottom) + 12px);left:16px;right:16px;max-width:448px;margin:0 auto;background:var(--card);border:1px solid var(--accent);border-radius:16px;padding:14px 16px;display:none;align-items:center;gap:12px;box-shadow:0 0 24px #00e5ff33;z-index:999}
+    .banner-title{font-size:13px;font-weight:700;color:var(--text)}
+    .banner-sub{font-size:11px;color:var(--muted);margin-top:2px}
+    .btn-install{background:var(--accent);color:#0a0f1e;border:none;border-radius:10px;padding:8px 14px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}
+    .btn-dismiss{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:0 4px}
+
+    .spinner{width:12px;height:12px;border:2px solid var(--muted);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+
+    @keyframes fadeSlide{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+    @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+
+<!-- Settings Gear -->
+<div id="settings-btn" onclick="openModal()">⚙️</div>
+
+<!-- API Key Modal -->
+<div id="api-modal">
+  <div class="modal-box">
+    <div class="modal-icon">🤖</div>
+    <div class="modal-title">Connect Free AI</div>
+    <div style="text-align:center;margin-bottom:14px">
+      <span class="free-badge">✅ 100% FREE — No Credit Card</span>
+    </div>
+    <div class="modal-sub">
+      Google Gemini API bilkul free hai — 1500 requests/day!<br>
+      Sirf ek baar setup karo, hamesha kaam karega.
+    </div>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-text">
+          <strong>aistudio.google.com</strong> pe jao<br>
+          <a href="https://aistudio.google.com/apikey" target="_blank">👉 Yahan tap karo (direct link)</a>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-text">
+          <strong>"Create API Key"</strong> button dabao<br>
+          Gmail account se login karo (free)
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-text">
+          Key copy karo aur neeche paste karo<br>
+          <strong>AIza...</strong> se shuru hogi
+        </div>
+      </div>
+    </div>
+
+    <div id="key-saved-row" class="key-saved-row" style="display:none">
+      ✅ API key saved hai — update kar sakte ho
+    </div>
+
+    <div class="key-label">Apni Gemini API Key Paste Karo</div>
+    <div class="key-input-wrap">
+      <input type="password" id="api-key-input" placeholder="AIzaSy..." />
+      <button class="btn-eye" onclick="toggleKeyVis()">👁️</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:10px">
+      <button class="btn-test-key" onclick="testKey()" id="test-btn">🧪 Test Key</button>
+      <button class="btn-save-key" onclick="saveKey()" style="flex:1">💾 Save</button>
+    </div>
+    <div id="test-result"></div>
+    <div class="modal-note">🔒 Key sirf aapke phone mein save hoti hai</div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="header">
+    <div class="badge">⚡ AI NUTRITION ANALYZER</div>
+    <h1>What Are You<br>Consuming?</h1>
+    <p>Any food or drink — instant science-backed analysis</p>
+  </div>
+
+  <div class="input-card">
+    <textarea id="food-input" rows="3"
+      placeholder="Type any food or drink…&#10;e.g. Biryani, Coca-Cola, Mango, Green Tea"></textarea>
+    <div class="input-footer">
+      <span>Tap Analyze or press Enter</span>
+      <button class="btn-analyze" id="analyze-btn" onclick="analyze()">
+        🔬 Analyze
+      </button>
+    </div>
+  </div>
+
+  <div id="examples-section">
+    <div class="examples-label">Try an example</div>
+    <div class="examples">
+      <button class="example-chip" onclick="setExample('Big Mac')">🍔 Big Mac</button>
+      <button class="example-chip" onclick="setExample('Orange Juice')">🧃 Orange Juice</button>
+      <button class="example-chip" onclick="setExample('Chicken Biryani')">🍚 Biryani</button>
+      <button class="example-chip" onclick="setExample('Red Bull')">⚡ Red Bull</button>
+      <button class="example-chip" onclick="setExample('Pepperoni Pizza')">🍕 Pizza</button>
+      <button class="example-chip" onclick="setExample('Whole Milk')">🥛 Milk</button>
+      <button class="example-chip" onclick="setExample('Avocado Toast')">🥑 Avocado Toast</button>
+      <button class="example-chip" onclick="setExample('Samosa')">🫔 Samosa</button>
+    </div>
+  </div>
+
+  <div id="output"></div>
+</div>
+
+<div id="install-banner">
+  <span style="font-size:28px">📲</span>
+  <div>
+    <div class="banner-title">Install NutriAI App</div>
+    <div class="banner-sub">Add to home screen!</div>
+  </div>
+  <button class="btn-install" id="install-btn">Install</button>
+  <button class="btn-dismiss" onclick="dismissBanner()">✕</button>
+</div>
+
+<script>
+  if('serviceWorker' in navigator){
+    window.addEventListener('load',()=>{
+      navigator.serviceWorker.register('./sw.js',{scope:'./'}).catch(()=>{});
+    });
+  }
+
+  function getKey(){ return localStorage.getItem('nutri_gemini_key')||''; }
+
+  function openModal(){
+    document.getElementById('api-modal').style.display='flex';
+    const saved=getKey();
+    if(saved){
+      document.getElementById('key-saved-row').style.display='flex';
+      document.getElementById('api-key-input').value=saved;
+    }
+  }
+
+  function toggleKeyVis(){
+    const i=document.getElementById('api-key-input');
+    i.type=i.type==='password'?'text':'password';
+  }
+
+  async function testKey(){
+    const val=document.getElementById('api-key-input').value.trim();
+    if(!val){alert('Pehle key paste karo');return;}
+    const btn=document.getElementById('test-btn');
+    const res_div=document.getElementById('test-result');
+    btn.textContent='⏳ Testing...'; btn.disabled=true;
+    res_div.innerHTML='';
+    const MODELS=['gemini-2.0-flash','gemini-2.0-flash-lite','gemini-1.5-flash','gemini-1.5-flash-002','gemini-1.5-pro','gemini-1.0-pro'];
+    let found=false;
+    for(const m of MODELS){
+      try{
+        const r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${val}`,
+          {method:'POST',headers:{'Content-Type':'application/json'},
+           body:JSON.stringify({contents:[{parts:[{text:'Say: OK'}]}],generationConfig:{maxOutputTokens:5}})});
+        if(r.ok){
+          res_div.innerHTML=`<div style="background:#00ff9d18;border:1px solid #00ff9d44;border-radius:10px;padding:8px 12px;font-size:12px;color:#00ff9d;margin-bottom:8px">✅ Key working! Model: <strong>${m}</strong></div>`;
+          found=true; break;
+        } else if(r.status===400||r.status===403||r.status===401){
+          const ed=await r.json().catch(()=>({}));
+          res_div.innerHTML=`<div style="background:#ff4d6d18;border:1px solid #ff4d6d55;border-radius:10px;padding:8px 12px;font-size:12px;color:#ff8fa3;margin-bottom:8px">❌ Key invalid: ${ed?.error?.message||'Auth error'}</div>`;
+          found=true; break;
+        }
+      }catch(e){continue;}
+    }
+    if(!found) res_div.innerHTML=`<div style="background:#ffd16618;border:1px solid #ffd16644;border-radius:10px;padding:8px 12px;font-size:12px;color:#ffd166;margin-bottom:8px">⚠️ Sab models fail — internet check karo</div>`;
+    btn.textContent='🧪 Test Key'; btn.disabled=false;
+  }
+
+  function saveKey(){
+    const val=document.getElementById('api-key-input').value.trim();
+    if(!val||val.length<10){
+      alert('Sahi API key enter karo (AIzaSy... se shuru honi chahiye)');
+      return;
+    }
+    localStorage.setItem('nutri_gemini_key',val);
+    document.getElementById('api-modal').style.display='none';
+    document.getElementById('food-input').focus();
+  }
+
+  window.addEventListener('DOMContentLoaded',()=>{
+    if(!getKey()) document.getElementById('api-modal').style.display='flex';
+    else document.getElementById('api-modal').style.display='none';
+  });
+
+  document.getElementById('api-modal').addEventListener('click',function(e){
+    if(e.target===this && getKey()) this.style.display='none';
+  });
+
+  let deferredPrompt=null;
+  window.addEventListener('beforeinstallprompt',e=>{
+    e.preventDefault(); deferredPrompt=e;
+    document.getElementById('install-banner').style.display='flex';
+  });
+  document.getElementById('install-btn').onclick=async()=>{
+    if(!deferredPrompt)return;
+    deferredPrompt.prompt();
+    await deferredPrompt.userChoice;
+    deferredPrompt=null; dismissBanner();
+  };
+  function dismissBanner(){ document.getElementById('install-banner').style.display='none'; }
+
+  document.getElementById('food-input').addEventListener('keydown',e=>{
+    if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();analyze();}
+  });
+  function setExample(name){
+    document.getElementById('food-input').value=name;
+    document.getElementById('food-input').focus();
+  }
+
+  const CAT_COLORS={Healthy:'#00ff9d',Junk:'#ff4d6d',Mixed:'#ffd166',Hydrating:'#00e5ff',Sugary:'#ffd166','Protein-rich':'#b47dff'};
+
+  async function analyze(){
+    const input=document.getElementById('food-input').value.trim();
+    if(!input)return;
+    const apiKey=getKey();
+    if(!apiKey){openModal();return;}
+
+    const btn=document.getElementById('analyze-btn');
+    btn.disabled=true;
+    btn.innerHTML='<span class="spinner"></span> Analyzing…';
+    document.getElementById('examples-section').style.display='none';
+    showSkeleton();
+
+    const prompt=`You are a Nutrition Scientist AI. Analyze this food/drink item and return ONLY valid JSON, no markdown, no extra text.
+
+CRITICAL RULES:
+- type="Food" for solids: burger, pizza, biryani, rice, bread, samosa, paratha, fruit, salad, cake, chips etc
+- type="Drink" for liquids: water, juice, soda, milk, tea, coffee, energy drink, smoothie, lassi etc
+- Food needs: protein, carbs, fat, fiber fields
+- Drink needs: caffeine, hydration_level, electrolytes fields
+
+Return this exact JSON:
+{"name":"item name","type":"Food or Drink","category":"Junk|Healthy|Mixed|Hydrating|Sugary|Protein-rich","calories":"e.g. 540 kcal","protein":"e.g. 28g","carbs":"e.g. 45g","fat":"e.g. 22g","sugar":"e.g. 9g","fiber":"e.g. 3g","caffeine":"e.g. 80mg or None","hydration_level":"Low|Medium|High","electrolytes":"Yes|No|Low","health_score":7,"health_explanation":"one sentence","digestion":[{"emoji":"👶","label":"Baby (0-5)","time":"3-4 hours","reason":"one sentence"},{"emoji":"🧑","label":"Teen (13-19)","time":"2-3 hours","reason":"one sentence"},{"emoji":"👨","label":"Adult (20-50)","time":"2.5-3.5 hours","reason":"one sentence"},{"emoji":"👴","label":"Older (50+)","time":"4-5 hours","reason":"one sentence"}],"health_warnings":[],"simple_explanation":"2-3 sentences"}
+
+Analyze: ${input}`;
+
+    const MODELS=[
+      'gemini-2.0-flash',
+      'gemini-2.0-flash-lite',
+      'gemini-1.5-flash',
+      'gemini-1.5-flash-002',
+      'gemini-1.5-pro',
+      'gemini-1.0-pro'
+    ];
+    let lastError='',success=false;
+
+    for(const model of MODELS){
+      try{
+        const res=await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {method:'POST',headers:{'Content-Type':'application/json'},
+           body:JSON.stringify({contents:[{parts:[{text:prompt}]}],generationConfig:{temperature:0.3,maxOutputTokens:1000}})}
+        );
+
+        if(res.status===400||res.status===401||res.status===403){
+          const ed=await res.json().catch(()=>({}));
+          const em=ed?.error?.message||'Invalid API key';
+          document.getElementById('output').innerHTML=
+            `<div class="error-box">❌ <strong>API Key Error</strong><br><br><code style="font-size:11px;word-break:break-all;color:#ffd166">${em}</code><br><br>⚙️ upar gear icon tap karo → key dobara paste karo<br><br><a href="https://aistudio.google.com/apikey" target="_blank" style="color:#00e5ff">👉 Free key yahan se lo</a></div>`;
+          success=true; break;
+        }
+
+        if(res.status===404){lastError=`Model ${model} not found`;continue;}
+        if(!res.ok){const ed=await res.json().catch(()=>({}));lastError=ed?.error?.message||`HTTP ${res.status}`;continue;}
+
+        const data=await res.json();
+        let raw=data?.candidates?.[0]?.content?.parts?.[0]?.text||'';
+        raw=raw.replace(/```json|```/g,'').trim();
+        const jm=raw.match(/\{[\s\S]*\}/);
+        if(!jm){lastError='No JSON in response';continue;}
+        renderResult(JSON.parse(jm[0]));
+        success=true; break;
+      }catch(e){lastError=e.message||'Network error';continue;}
+    }
+
+    if(!success){
+      document.getElementById('output').innerHTML=
+        `<div class="error-box">❌ <strong>Analysis Failed</strong><br><br><code style="font-size:11px;color:#ffd166">${lastError}</code><br><br>Check karo:<br>• ⚙️ API key sahi hai?<br>• Internet connection?<br><br><a href="https://aistudio.google.com/apikey" target="_blank" style="color:#00e5ff">👉 Free key lo (aistudio.google.com)</a></div>`;
+    }
+    btn.disabled=false; btn.innerHTML='🔬 Analyze';
+  }
+
+  function showSkeleton(){
+    document.getElementById('output').innerHTML=`
+      <div class="skeleton">
+        ${[80,60,40,70,50].map(w=>`<div class="skel-line" style="width:${w}%"></div>`).join('')}
+        <div class="skel-msg">🧬 Running nutritional analysis…</div>
+      </div>`;
+  }
+
+  function renderResult(d){
+    const isFood=!!(d.protein||d.carbs||d.fat||d.fiber)||d.type==='Food';
+    const catColor=CAT_COLORS[d.category]||'#e2e8f0';
+    const sc=d.health_score>=7?'#00ff9d':d.health_score>=4?'#ffd166':'#ff4d6d';
+    const pct=(d.health_score/10)*100;
+    const warnings=d.health_warnings||[];
+
+    const np=isFood
+      ?[['Protein',d.protein,'#b47dff'],['Carbs',d.carbs,'#ffd166'],['Fat',d.fat,'#ff4d6d'],['Sugar',d.sugar,'#ffd166'],['Fiber',d.fiber,'#00ff9d']]
+      :[['Sugar',d.sugar,'#ffd166'],['Caffeine',d.caffeine,'#00e5ff'],
+        ['Hydration',d.hydration_level,d.hydration_level==='High'?'#00ff9d':d.hydration_level==='Medium'?'#ffd166':'#ff4d6d'],
+        ['Electrolytes',d.electrolytes,'#b47dff']];
+
+    document.getElementById('output').innerHTML=`
+      <div class="result-card">
+        <div class="result-header">
+          <div>
+            <div class="result-name">${d.name}</div>
+            <div class="tags">
+              <span class="tag tag-type">${d.type}</span>
+              <span class="tag" style="background:${catColor}22;color:${catColor}">${d.category}</span>
+            </div>
+          </div>
+          <div class="calorie-box">
+            <div class="calorie-label">CALORIES</div>
+            <div class="calorie-val">${(d.calories||'').replace(/[^0-9]/g,'')||'—'}</div>
+            <div class="calorie-unit">kcal</div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Nutrition Breakdown</div>
+          <div class="pills">${np.map(([l,v,c])=>pill(l,v,c)).join('')}</div>
+        </div>
+        <div class="section">
+          <div class="section-title">Health Rating</div>
+          <div class="score-row">
+            <span class="score-label">HEALTH SCORE</span>
+            <span class="score-num" style="color:${sc}">${d.health_score}/10</span>
+          </div>
+          <div class="score-track">
+            <div class="score-fill" style="width:${pct}%;background:linear-gradient(90deg,${sc}88,${sc});box-shadow:0 0 8px ${sc}99"></div>
+          </div>
+          <div class="score-explain">${d.health_explanation}</div>
+        </div>
+        <div class="section">
+          <div class="section-title">Digestion & Absorption</div>
+          <div class="age-cards">
+            ${(d.digestion||[]).map(a=>`
+              <div class="age-card">
+                <span class="age-emoji">${a.emoji}</span>
+                <div class="age-body">
+                  <div class="age-top"><span class="age-group">${a.label}</span><span class="age-time">${a.time}</span></div>
+                  <div class="age-reason">${a.reason}</div>
+                </div>
+              </div>`).join('')}
+          </div>
+        </div>
+        ${warnings.length?`<div class="section"><div class="section-title">Health Warnings</div><div class="warnings">${warnings.map(w=>`<div class="warning">⚠️ ${w}</div>`).join('')}</div></div>`:''}
+        <div class="section">
+          <div class="section-title">Summary</div>
+          <div class="summary-box">${d.simple_explanation}</div>
+        </div>
+      </div>`;
+  }
+
+  function pill(l,v,c){
+    return `<div class="pill"><span class="pill-label">${l}</span><span class="pill-val" style="color:${c}">${v||'—'}</span></div>`;
+  }
+</script>
+</body>
+</html>
